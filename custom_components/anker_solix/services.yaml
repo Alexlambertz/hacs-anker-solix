@@ -27,6 +27,16 @@ clear_solarbank_schedule:
       # therefore a proper core domain feature is used as filter that resolves to same IntFlag as used in AnkerSolixEntityFeature
       supported_features:
         - calendar.CalendarEntityFeature.CREATE_EVENT
+  fields:
+    default_load:
+      required: false
+      example: 0
+      selector:
+        number:
+          min: 0
+          max: 800
+          step: 10
+          unit_of_measurement: "W"
 set_solarbank_schedule:
   target:
     entity:

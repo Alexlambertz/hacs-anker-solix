@@ -50,6 +50,8 @@ DEVICE_LOAD = "device_load"
 CHARGE_PRIORITY_LIMIT = "charge_priority_limit"
 ALLOW_EXPORT = "allow_export"
 
+DEFAULT_LOAD = "default_load"
+
 
 VALID_DAYTIME = vol.All(
     lambda v: datetime.strptime(":".join(str(v).split(":")[:2]), "%H:%M"),
@@ -73,6 +75,17 @@ VALID_DEVICE_LOAD = vol.Any(
         vol.Range(
             min=int(api.SolixDefaults.PRESET_MIN / 2),
             max=api.SolixDefaults.PRESET_MAX,
+        ),
+    ),
+)
+VALID_DEFAULT_LOAD = vol.Any(
+    None,
+    cv.ENTITY_MATCH_NONE,
+    vol.All(
+        vol.Coerce(int),
+        vol.Range(
+            min=0,
+            max=800,
         ),
     ),
 )
@@ -106,6 +119,12 @@ SOLARBANK_TIMESLOT_DICT: dict = {
     ): VALID_ALLOW_DISCHARGE,
 }
 
+SOLARBANK_CLEAR_DICT: dict = {
+    vol.Optional(
+        DEFAULT_LOAD,
+    ): VALID_DEFAULT_LOAD,
+}
+
 SOLARBANK_TIMESLOT_SCHEMA: vol.Schema = vol.All(
     cv.make_entity_service_schema(
         {**cv.TARGET_SERVICE_FIELDS, **SOLARBANK_TIMESLOT_DICT}
@@ -114,4 +133,10 @@ SOLARBANK_TIMESLOT_SCHEMA: vol.Schema = vol.All(
 
 SOLIX_ENTITY_SCHEMA: vol.Schema = vol.All(
     cv.make_entity_service_schema(cv.TARGET_SERVICE_FIELDS),
+)
+
+SOLIX_CLEAR_SCHEMA: vol.Schema = vol.All(
+    cv.make_entity_service_schema(
+        {**cv.TARGET_SERVICE_FIELDS, **SOLARBANK_CLEAR_DICT}
+    ),
 )

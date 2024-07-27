@@ -62,8 +62,10 @@ from .const import (
     ALLOW_EXPORT,
     APPLIANCE_LOAD,
     DEVICE_LOAD,
+    DEFAULT_LOAD,
     CHARGE_PRIORITY_LIMIT,
     CONF_SKIP_INVALID,
+    SOLIX_CLEAR_SCHEMA,
 )
 from .coordinator import AnkerSolixDataUpdateCoordinator
 from .solixapi.types import (
@@ -1169,7 +1171,7 @@ async def async_setup_entry(
     )
     platform.async_register_entity_service(
         name=SERVICE_CLEAR_SOLARBANK_SCHEDULE,
-        schema=SOLIX_ENTITY_SCHEMA,
+        schema=SOLIX_CLEAR_SCHEMA,
         func=SERVICE_CLEAR_SOLARBANK_SCHEDULE,
         required_features=[AnkerSolixEntityFeature.SOLARBANK_SCHEDULE],
     )
@@ -1697,7 +1699,30 @@ class AnkerSolixSensor(CoordinatorEntity, SensorEntity):
                 if generation > 1:
                     # Clear SB2 schedule
                     if (schedule := data.get("schedule") or {}):
-                        schedule.update({"custom_rate_plan": []})
+
+                        newPlans = [
+                            {
+                                "index": 0,
+                                "week": [
+                                    0,
+                                    1,
+                                    2,
+                                    3,
+                                    4,
+                                    5,
+                                    6
+                                ],
+                                "ranges": [
+                                    {
+                                    "start_time": "0:00",
+                                    "end_time": "24:00",
+                                    "power": kwargs.get(DEFAULT_LOAD)
+                                    }
+                                ]
+                            },
+                        ]
+
+                        schedule.update({"custom_rate_plan": newPlans})
                         if self.coordinator.client.testmode():
                             if self.coordinator.client.testmode():
                                 LOGGER.info(
@@ -1708,6 +1733,7 @@ class AnkerSolixSensor(CoordinatorEntity, SensorEntity):
                             await self.coordinator.client.api.set_device_parm(
                                 siteId=data.get("site_id") or "",
                                 paramData=schedule,
+                                paramType="6",
                                 deviceSn=self._context_base,
                             )
                 else:
@@ -1728,7 +1754,7 @@ class AnkerSolixSensor(CoordinatorEntity, SensorEntity):
                 # update sites required to get applied output power fields, they are no provided with get_device_parm endpoint
                 # which fetches new schedule after update
                 await self.coordinator.client.api.update_sites(
-                    siteId=siteId,
+                    siteId=data.get("site_id") or siteId,
                     fromFile=self.coordinator.client.testmode(),
                 )
                 # trigger coordinator update with api dictionary data
